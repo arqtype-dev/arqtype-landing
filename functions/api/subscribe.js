@@ -6,10 +6,13 @@
  * profile to a Klaviyo list. The Klaviyo private API key never reaches the
  * browser — it is read from the Pages environment at runtime.
  *
- * Required environment variables (set in Cloudflare Pages → Settings →
- * Environment variables, as encrypted Secrets):
+ * Required environment variables (Cloudflare Pages → Settings →
+ * Variables and Secrets, as encrypted Secrets, on the Production env):
  *   KLAVIYO_PRIVATE_KEY   e.g. pk_xxxxxxxxxxxxxxxxxxxx
  *   KLAVIYO_LIST_ID       e.g. XxXxXx
+ *
+ * NOTE: secrets only bind to deployments created AFTER they are saved.
+ * Trigger a fresh deployment if you added them to an existing build.
  */
 
 const KLAVIYO_REVISION = "2024-10-15";
@@ -17,11 +20,26 @@ const KLAVIYO_REVISION = "2024-10-15";
 export async function onRequestPost(context) {
   const { request, env } = context;
 
+  // Surface configuration problems as readable JSON instead of a 502.
+  if (!env.KLAVIYO_PRIVATE_KEY || !env.KLAVIYO_LIST_ID) {
+    return json(
+      {
+        error: "config_missing",
+        message:
+          "KLAVIYO_PRIVATE_KEY and/or KLAVIYO_LIST_ID are not set on this deployment. " +
+          "Add them as secrets and redeploy.",
+        has_key: Boolean(env.KLAVIYO_PRIVATE_KEY),
+        has_list: Boolean(env.KLAVIYO_LIST_ID),
+      },
+      500
+    );
+  }
+
   let body;
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Invalid JSON" }, 400);
+    return json({ error: "invalid_json" }, 400);
   }
 
   const email = (body.email || "").trim();
@@ -55,34 +73,36 @@ export async function onRequestPost(context) {
     },
   };
 
-  const kRes = await fetch(
-    "https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Klaviyo-API-Key ${env.KLAVIYO_PRIVATE_KEY}`,
-        accept: "application/json",
-        "content-type": "application/json",
-        revision: KLAVIYO_REVISION,
-      },
-      body: JSON.stringify(payload),
+  try {
+    const kRes = await fetch(
+      "https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Klaviyo-API-Key ${env.KLAVIYO_PRIVATE_KEY}`,
+          accept: "application/json",
+          "content-type": "application/json",
+          revision: KLAVIYO_REVISION,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (kRes.status >= 200 && kRes.status < 300) {
+      return json({ ok: true }, 200);
     }
-  );
 
-  if (kRes.status >= 200 && kRes.status < 300) {
-    return json({ ok: true }, 200);
+    // Klaviyo responded but rejected the request — pass the detail through
+    // so the cause (revision, scope, list id) is visible.
+    const detail = await kRes.text();
+    return json({ error: "klaviyo_error", status: kRes.status, detail }, 200);
+  } catch (err) {
+    // Any unexpected runtime failure — report it rather than 502.
+    return json(
+      { error: "exception", message: String(err && err.message ? err.message : err) },
+      200
+    );
   }
-
-  const detail = await kRes.text();
-  return json({ error: "klaviyo_error", status: kRes.status, detail }, 502);
-}
-
-// Reject non-POST methods cleanly.
-export function onRequest(context) {
-  if (context.request.method === "POST") {
-    return onRequestPost(context);
-  }
-  return new Response("Method not allowed", { status: 405 });
 }
 
 function json(obj, status) {

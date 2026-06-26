@@ -1,174 +1,172 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { EarlyAccessModal } from "./components/EarlyAccessModal";
 
-function useUptime() {
-  const [t, setT] = useState(42);
-  useEffect(() => {
-    const id = setInterval(() => setT((x) => x + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const h = String(Math.floor(t / 3600)).padStart(2, "0");
-  const m = String(Math.floor((t % 3600) / 60)).padStart(2, "0");
-  const s = String(t % 60).padStart(2, "0");
-  return `00:${h}:${m}:${s}`;
-}
+const NAV_ITEMS = [
+  "Product",
+  "Infrastructure",
+  "Operations",
+  "Chains",
+  "Docs",
+  "Changelog",
+];
 
-function KV({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-end gap-3">
-      <span className="text-muted-foreground">
-        [ <span className="text-foreground/80">{k.padEnd(6, " ")}</span> ]
-      </span>
-      <span className="text-accent w-[7.5rem] text-left">{v}</span>
-    </div>
-  );
-}
-
-function StatusLine({ n, label }: { n: string; label: string }) {
-  return (
-    <div className="grid grid-cols-[2.5rem_1fr]">
-      <span className="text-muted-foreground/70">{n}</span>
-      <span className="text-accent">[ {label} ]</span>
-    </div>
-  );
-}
+const CHAINS = [
+  { glyph: "≡", name: "Solana" },
+  { glyph: "◆", name: "Ethereum" },
+  { glyph: "⊖", name: "Base" },
+  { glyph: "◊", name: "SUI" },
+  { glyph: "▽", name: "TON" },
+  { glyph: "❖", name: "BNB" },
+  { glyph: "⊘", name: "Arbitrum" },
+  { glyph: "Ⱨ", name: "HYPE" },
+];
 
 export default function App() {
-  const uptime = useUptime();
-  const progress = 38;
-  const filled = Math.round((progress / 100) * 14);
-  const bar = "■".repeat(filled) + "□".repeat(14 - filled);
+  const [modalOpen, setModalOpen] = useState(false);
+  // Ensures the exit-intent modal only fires once per page session.
+  const exitIntentFired = useRef(false);
+
+  const openModal = useCallback(() => setModalOpen(true), []);
+  const closeModal = useCallback(() => setModalOpen(false), []);
+
+  // Exit-intent: open the modal when the cursor leaves the viewport
+  // through the top edge (typical "leaving the page" gesture).
+  useEffect(() => {
+    const handleMouseOut = (e: MouseEvent) => {
+      if (exitIntentFired.current) return;
+      if (e.relatedTarget !== null) return;
+      if (e.clientY > 0) return;
+      exitIntentFired.current = true;
+      setModalOpen(true);
+    };
+    document.addEventListener("mouseout", handleMouseOut);
+    return () => document.removeEventListener("mouseout", handleMouseOut);
+  }, []);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-background text-foreground">
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       {/* Background layers */}
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-      <div className="pointer-events-none absolute inset-0 bg-scanlines" />
+      <div className="pointer-events-none fixed inset-0 bg-grid opacity-40" />
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none fixed inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 45%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 65%)",
+            "radial-gradient(ellipse at 50% 30%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%)",
         }}
       />
 
-      {/* Outer corner brackets */}
-      <span className="pointer-events-none absolute left-4 top-4 h-5 w-5 border-l border-t border-accent/60" />
-      <span className="pointer-events-none absolute right-4 top-4 h-5 w-5 border-r border-t border-accent/60" />
-      <span className="pointer-events-none absolute bottom-4 left-4 h-5 w-5 border-b border-l border-accent/60" />
-      <span className="pointer-events-none absolute bottom-4 right-4 h-5 w-5 border-b border-r border-accent/60" />
-
-      {/* Mid-edge plus markers */}
-      <span className="pointer-events-none absolute left-[7%] top-[22%] font-mono text-xs text-muted-foreground/60">+</span>
-      <span className="pointer-events-none absolute right-[5%] top-[36%] font-mono text-xs text-muted-foreground/60">+</span>
-
-      {/* TOP-LEFT path label */}
-      <div className="absolute left-6 top-5 font-mono text-[12px] text-muted-foreground">
-        /arqtype.io <span className="cursor-blink text-foreground">_</span>
-      </div>
-
-      {/* TOP-RIGHT spec block */}
-      <div className="absolute right-6 top-5 font-mono text-[11px] leading-[1.55] text-muted-foreground">
-        <KV k="UPTIME" v={uptime} />
-        <KV k="MODE" v="BUILD" />
-        <KV k="ENV" v="PRODUCTION" />
-        <KV k="REGION" v="GLOBAL" />
-      </div>
-
-      {/* LEFT line numbers */}
-      <div className="absolute left-6 top-1/2 hidden -translate-y-1/2 font-mono text-[11px] leading-[1.7] text-muted-foreground/70 sm:block">
-        {Array.from({ length: 20 }).map((_, i) => {
-          const n = String(i + 1).padStart(2, "0");
-          const active = i === 5;
-          return (
-            <div key={i} className={active ? "text-accent" : ""}>
-              {active ? <span className="mr-1">&gt;</span> : <span className="mr-1 opacity-0">&gt;</span>}
-              {n}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* BOTTOM-LEFT tree */}
-      <div className="absolute bottom-7 left-6 font-mono text-[12px] leading-[1.7] text-muted-foreground">
-        <div className="text-foreground/90">/arqtype</div>
-        <div>├── operators</div>
-        <div>├── infrastructure</div>
-        <div>├── systems</div>
-        <div>└── <span className="text-accent">[ classified ]</span></div>
-      </div>
-
-      {/* BOTTOM-RIGHT comment block */}
-      <div className="absolute bottom-7 right-6 text-right font-mono text-[12px] leading-[1.7] text-muted-foreground">
-        <div>// building the</div>
-        <div>// infrastructure</div>
-        <div>// that moves markets</div>
-        <div className="mt-2 text-accent">
-          {"{ "}<span className="flicker">initializing...</span>{" }"}
-        </div>
-      </div>
-
-      {/* CENTER */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
-        {/* Hero with side brackets */}
-        <div className="relative flex items-center">
-          <span className="font-mono text-[3.5rem] font-thin leading-none text-accent/80 sm:text-[5rem] md:text-[7rem]">
-            [
+      {/* ── HEADER ── */}
+      <header className="relative z-10 mx-auto mt-4 flex max-w-[1400px] items-center gap-6 rounded-md border border-border bg-surface/40 px-5 py-3">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <span className="flex h-7 w-9 items-center justify-center rounded-[4px] border border-accent/70 font-display text-sm font-bold text-accent">
+            A
           </span>
-          <h1
-            className="px-6 font-display text-[14vw] font-medium uppercase leading-none text-foreground text-glow sm:text-[11vw] md:text-[9vw] lg:text-[7.5vw]"
-            style={{ letterSpacing: "0.08em" }}
+          <span className="font-display text-base font-bold tracking-tight">
+            Arqtype
+          </span>
+          <span className="ml-3 hidden h-4 w-px bg-border md:block" />
+          <span className="ml-1 hidden font-mono text-[11px] tracking-[0.2em] text-muted-foreground md:inline">
+            EXECUTION LAYER · V2.4
+          </span>
+        </div>
+
+        {/* Nav */}
+        <nav className="ml-auto hidden items-center gap-7 lg:flex">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item} href="#"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {item}
+            </a>
+          ))}
+        </nav>
+
+        {/* Right cluster */}
+        <div className="ml-auto flex items-center gap-4 lg:ml-0">
+          <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            Sign in
+          </a>
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-[6px] bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
-            ARQTYPE
-          </h1>
-          <span className="font-mono text-[3.5rem] font-thin leading-none text-accent/80 sm:text-[5rem] md:text-[7rem]">
-            ]
-          </span>
-          <span className="absolute left-1/2 -bottom-6 -translate-x-1/2 font-mono text-accent">_</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            Private Beta v0.45
+            <span aria-hidden>→</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ── HERO ── */}
+      <section className="relative z-10 mx-auto flex max-w-[1100px] flex-col items-center px-6 pt-20 pb-16 text-center sm:pt-28">
+        {/* Status chip */}
+        <div className="mb-12 flex items-center gap-2 rounded-[6px] border border-border bg-surface/40 px-4 py-2 font-mono text-[11px] tracking-[0.18em] text-muted-foreground">
+          <span>[</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[oklch(0.72_0.17_150)]" />
+          <span className="text-foreground/80">V2.4 · MULTI-CHAIN EXECUTION ENGINE ·</span>
+          <span className="text-[oklch(0.72_0.17_150)]">LIVE</span>
+          <span className="text-border">|</span>
+          <a href="#" className="text-foreground/80 transition-colors hover:text-foreground">
+            CHANGELOG →
+          </a>
+          <span>]</span>
         </div>
 
-        {/* Tagline */}
-        <p className="mt-10 font-mono text-base text-foreground/90 sm:text-xl md:text-2xl">
-          Currently building Arqtype<span className="text-accent">.</span>
+        {/* Headline */}
+        <h1 className="font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
+          <span className="text-accent/65">Launch, automate</span>
+          <br />
+          <span className="text-accent/65">and scale</span>
+          <br />
+          <span className="text-accent">token operations.</span>
+        </h1>
+
+        {/* Subcopy */}
+        <p className="mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+          Arqtype is the institutional execution layer for Web3 teams — token
+          deployment, liquidity infrastructure, campaign automation and
+          multi-chain market operations, built as a single operating system.
         </p>
 
-        {/* Status output */}
-        <div className="mt-12 w-full max-w-md font-mono text-[12px] leading-[1.9] text-muted-foreground">
-          <div className="mb-2">
-            <span className="text-muted-foreground">root@arqtype</span>
-            <span>:~$ </span>
-            <span className="text-accent">status</span>
-          </div>
-          <StatusLine n="01" label="SYSTEM" />
-          <div className="grid grid-cols-[2.5rem_1fr]">
-            <span className="text-muted-foreground/70">02</span>
-            <span className="text-foreground">SYSTEM ACTIVE</span>
-          </div>
-          <div className="grid grid-cols-[2.5rem_1fr]">
-            <span className="text-muted-foreground/70">03</span>
-            <span> </span>
-          </div>
-          <StatusLine n="04" label="BUILD" />
-          <div className="grid grid-cols-[2.5rem_1fr]">
-            <span className="text-muted-foreground/70">05</span>
-            <span className="text-foreground">IN PROGRESS</span>
-          </div>
-          <div className="grid grid-cols-[2.5rem_1fr]">
-            <span className="text-muted-foreground/70">06</span>
-            <span> </span>
-          </div>
-          <StatusLine n="07" label="PROGRESS" />
-          <div className="grid grid-cols-[2.5rem_1fr] items-center">
-            <span className="text-muted-foreground/70">08</span>
-            <span>
-              <span className="text-accent tracking-[0.15em]">{bar}</span>
-              <span className="ml-3 text-foreground">{progress}%</span>
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="cursor-blink text-foreground">_</span>
-          </div>
+        {/* CTAs */}
+        <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+          <button
+            type="button"
+            onClick={openModal}
+            className="flex items-center gap-2 rounded-[6px] bg-accent px-6 py-3 text-sm font-semibold text-foreground transition-opacity hover:opacity-90"
+          >
+            Get Early Access
+            <span aria-hidden>→</span>
+          </button>
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-[6px] border border-border bg-surface/50 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/50"
+          >
+            <span className="font-mono text-accent">$</span>
+            View documentation
+          </button>
         </div>
-      </div>
+      </section>
+
+      {/* ── OPERATING ON ── */}
+      <section className="relative z-10 mx-auto flex max-w-[1100px] flex-wrap items-center justify-center gap-x-8 gap-y-3 px-6 pb-20">
+        <span className="font-mono text-[11px] tracking-[0.2em] text-muted-foreground">
+          OPERATING ON
+        </span>
+        {CHAINS.map((chain) => (
+          <span
+            key={chain.name}
+            className="flex items-center gap-2 text-sm text-foreground/80"
+          >
+            <span className="font-mono text-muted-foreground">{chain.glyph}</span>
+            {chain.name}
+          </span>
+        ))}
+      </section>
+
+      <EarlyAccessModal open={modalOpen} onClose={closeModal} />
     </main>
   );
 }

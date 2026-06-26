@@ -1,0 +1,15 @@
+name = "arqtype-klaviyo"
+main = "klaviyo.js"
+compatibility_date = "2024-11-01"
+
+# Bind the Worker to the /api/subscribe route on your domain so the
+# landing page can POST to a same-origin endpoint (no CORS needed).
+# Replace arqtype.io with your production zone.
+routes = [
+  { pattern = "arqtype.io/api/subscribe", zone_name = "arqtype.io" }
+]
+
+# Non-secret vars can live here. Secrets (KLAVIYO_PRIVATE_KEY, KLAVIYO_LIST_ID)
+# must be set with `wrangler secret put` — never commit them.
+[vars]
+ALLOWED_ORIGIN = "https://arqtype.io"

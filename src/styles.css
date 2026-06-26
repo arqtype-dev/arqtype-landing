@@ -30,12 +30,11 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body, #root { height: 100%; }
+  html, body, #root { min-height: 100%; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
 }

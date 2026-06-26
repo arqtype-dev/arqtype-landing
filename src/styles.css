@@ -18,23 +18,26 @@
 }
 
 :root {
-  --background: oklch(0.16 0.012 270);
-  --surface: oklch(0.20 0.015 270);
+  /* Near-black with a faint teal tint, matching the cyan reference. */
+  --background: oklch(0.17 0.012 220);
+  --surface: oklch(0.21 0.015 220);
   --foreground: oklch(0.98 0 0);
-  --muted-foreground: oklch(0.62 0.01 270);
-  --accent: oklch(0.65 0.20 290);
-  --accent-dim: oklch(0.45 0.14 290);
-  --border: oklch(0.30 0.02 270 / 0.5);
-  --grid: oklch(0.30 0.02 270 / 0.12);
+  --muted-foreground: oklch(0.62 0.015 220);
+  /* Cyan accent */
+  --accent: oklch(0.78 0.13 200);
+  --accent-dim: oklch(0.55 0.10 200);
+  --border: oklch(0.32 0.02 220 / 0.5);
+  --grid: oklch(0.40 0.03 200 / 0.06);
 }
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body, #root { min-height: 100%; }
+  html, body, #root { height: 100%; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
 }
@@ -58,6 +61,10 @@
 
 @utility text-glow {
   text-shadow: 0 0 18px color-mix(in oklab, var(--accent) 55%, transparent);
+}
+
+@utility accent-glow {
+  box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 30%, transparent);
 }
 
 @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }

@@ -14,8 +14,8 @@ const ENDPOINT =
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
-  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
 
@@ -42,15 +42,15 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
   const handleSubmit = async () => {
     setError("");
 
-    const trimmedEmail = email.trim();
     const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
 
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError("Enter a valid email address.");
-      return;
-    }
     if (!trimmedUsername) {
       setError("Enter a username.");
+      return;
+    }
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
       return;
     }
 
@@ -77,13 +77,10 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
       aria-label="Get early access"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-background/80"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-background/80" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md rounded-md border border-border bg-surface p-6 shadow-xl">
+      <div className="accent-glow relative w-full max-w-md rounded-[6px] border border-accent/40 bg-surface p-6 font-mono">
         {/* Close */}
         <button
           type="button"
@@ -96,7 +93,7 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
 
         {status === "success" ? (
           <div className="py-6 text-center">
-            <div className="mb-3 font-mono text-[11px] tracking-[0.2em] text-accent">
+            <div className="mb-3 text-[11px] tracking-[0.2em] text-accent">
               [ REGISTERED ]
             </div>
             <h2 className="font-display text-xl font-medium">You're on the list</h2>
@@ -106,14 +103,14 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 rounded-[6px] border border-border px-5 py-2 text-sm transition-colors hover:border-accent/50"
+              className="mt-6 rounded-[4px] border border-border px-5 py-2 text-sm transition-colors hover:border-accent/50"
             >
               Close
             </button>
           </div>
         ) : (
           <>
-            <div className="mb-1 font-mono text-[11px] tracking-[0.2em] text-muted-foreground">
+            <div className="mb-1 text-[11px] tracking-[0.2em] text-muted-foreground">
               [ EARLY ACCESS ]
             </div>
             <h2 className="font-display text-2xl font-medium">Get Early Access</h2>
@@ -122,21 +119,9 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
             </p>
 
             <div className="mt-6 space-y-4">
+              {/* Row 1 — Username */}
               <div>
-                <label className="mb-1.5 block font-mono text-[11px] tracking-[0.15em] text-muted-foreground">
-                  EMAIL
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@team.xyz"
-                  autoComplete="email"
-                  className="w-full rounded-[6px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block font-mono text-[11px] tracking-[0.15em] text-muted-foreground">
+                <label className="mb-1.5 block text-[11px] tracking-[0.15em] text-muted-foreground">
                   USERNAME
                 </label>
                 <input
@@ -145,25 +130,36 @@ export function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="operator handle"
                   autoComplete="username"
-                  className="w-full rounded-[6px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-accent"
+                  className="w-full rounded-[4px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-accent"
+                />
+              </div>
+              {/* Row 2 — Email */}
+              <div>
+                <label className="mb-1.5 block text-[11px] tracking-[0.15em] text-muted-foreground">
+                  EMAIL
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@team.xyz"
+                  autoComplete="email"
+                  className="w-full rounded-[4px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-accent"
                 />
               </div>
             </div>
 
             {error && (
-              <p className="mt-3 font-mono text-[12px] text-[oklch(0.65_0.2_25)]">
-                {error}
-              </p>
+              <p className="mt-3 text-[12px] text-[oklch(0.7_0.18_25)]">{error}</p>
             )}
 
             <button
               type="button"
               onClick={handleSubmit}
               disabled={status === "submitting"}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[6px] bg-accent px-6 py-3 text-sm font-semibold text-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="accent-glow mt-6 flex w-full items-center justify-center gap-2 rounded-[4px] border border-accent bg-transparent px-6 py-3 text-sm tracking-[0.15em] text-accent transition-colors hover:bg-accent/10 disabled:opacity-60"
             >
-              {status === "submitting" ? "Submitting…" : "Get Early Access"}
-              {status !== "submitting" && <span aria-hidden>→</span>}
+              {status === "submitting" ? "SUBMITTING…" : "GET EARLY ACCESS"}
             </button>
           </>
         )}
